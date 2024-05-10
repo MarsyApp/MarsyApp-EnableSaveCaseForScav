@@ -28,7 +28,7 @@ namespace EnableSaveCaseForScav
         {
             this._patches = new List<ModulePatch>
             {
-                new ItemViewPatches.ApplyDamageInfoPath(),
+                new ItemViewPatches.PostRaidHealthScreenClassPath(),
                 new ItemViewPatches.InteractionsHandlerClassPath(),
                 new ItemViewPatches.HasItemsPath(),
             };
@@ -55,11 +55,14 @@ namespace EnableSaveCaseForScav
 
     public static class ItemViewPatches
     {
-        public class ApplyDamageInfoPath : ModulePatch
+
+        private static string caseId = "5732ee6a24597719ae0c0281";
+        
+        public class PostRaidHealthScreenClassPath : ModulePatch
         {
             protected override MethodBase GetTargetMethod()
             {
-                return typeof(PostRaidHealthScreenClass).GetMethod("get_Boolean_3");
+                return AccessTools.PropertyGetter(typeof(PostRaidHealthScreenClass), nameof(PostRaidHealthScreenClass.Boolean_3));
             }
 
             [PatchPostfix]
@@ -68,7 +71,7 @@ namespace EnableSaveCaseForScav
                 try
                 {
                     __result = true;
-                } catch (System.Exception e)
+                } catch (Exception e)
                 {
                     Logger.LogError(e);
                 }
@@ -79,7 +82,7 @@ namespace EnableSaveCaseForScav
         {
             protected override MethodBase GetTargetMethod()
             {
-                return typeof(InteractionsHandlerClass).GetMethod("Remove", BindingFlags.Static | BindingFlags.Public);
+                return AccessTools.Method(typeof(InteractionsHandlerClass), nameof(InteractionsHandlerClass.Remove));
             }
 
             [PatchPostfix]
@@ -87,13 +90,13 @@ namespace EnableSaveCaseForScav
             {
                 try
                 {
-                    if (item.TemplateId.Equals("5732ee6a24597719ae0c0281"))
+                    if (item.TemplateId.Equals(caseId))
                     {
                         UnlootableComponent itemComponent = item.GetItemComponent<UnlootableComponent>();
                         __result = new InteractionsHandlerClass.GClass3334(itemComponent);
                     }
 
-                } catch (System.Exception e)
+                } catch (Exception e)
                 {
                     Logger.LogError(e);
                 }
@@ -102,11 +105,12 @@ namespace EnableSaveCaseForScav
         
         public class HasItemsPath : ModulePatch
         {
+
+            protected static Type nestedType;
             protected override MethodBase GetTargetMethod()
             {
-                Type nestedType = typeof(ScavengerInventoryScreen).GetNestedType("GClass3131", BindingFlags.Public);
-                MethodInfo methodInfo = nestedType.GetMethod("get_HasItems", BindingFlags.Public | BindingFlags.Instance);
-                return methodInfo;
+                nestedType = AccessTools.Inner(typeof(ScavengerInventoryScreen), nameof(ScavengerInventoryScreen.GClass3131));
+                return AccessTools.PropertyGetter(nestedType, "HasItems");
             }
 
             [PatchPostfix]
@@ -115,18 +119,18 @@ namespace EnableSaveCaseForScav
 
                 try
                 {
-                    FieldInfo _ScavController = AccessTools.Field(typeof(ScavengerInventoryScreen.GClass3131), "ScavController");
-                    GClass2764 scavController = (GClass2764)_ScavController.GetValue(__instance);
-                    IEnumerable<Item> Items = scavController.Inventory.AllRealPlayerItems;
+                    FieldInfo scavControllerFiledInfo = AccessTools.Field(nestedType, "ScavController");
+                    GClass2764 scavController = (GClass2764)scavControllerFiledInfo.GetValue(__instance);
+                    IEnumerable<Item> items = scavController.Inventory.AllRealPlayerItems;
                     
-                    IEnumerable<Item> filteredItems = Items.Where(x => !x.TemplateId.Equals("5732ee6a24597719ae0c0281"));
+                    IEnumerable<Item> filteredItems = items.Where(x => !x.TemplateId.Equals(caseId));
                     int filteredCount = filteredItems.Count();
                     if (filteredCount == 0)
                     {
                         __result = false;
                     }
 
-                } catch (System.Exception e)
+                } catch (Exception e)
                 {
                     Logger.LogError(e);
                 }
