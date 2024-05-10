@@ -4,8 +4,6 @@ import {ProfileHelper} from "@spt-aki/helpers/ProfileHelper";
 import {IPmcData} from "@spt-aki/models/eft/common/IPmcData";
 import {ProfileController} from "@spt-aki/controllers/ProfileController";
 import {PlayerScavGenerator} from "@spt-aki/generators/PlayerScavGenerator";
-import {IBotBase} from "@spt-aki/models/eft/common/tables/IBotBase";
-import {JsonUtil} from "@spt-aki/utils/JsonUtil";
 import {ItemHelper} from "@spt-aki/helpers/ItemHelper";
 
 class Mod {
