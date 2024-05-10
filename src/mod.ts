@@ -2,9 +2,10 @@ import {DependencyContainer} from "tsyringe";
 import {ILogger} from "@spt-aki/models/spt/utils/ILogger";
 import {ProfileHelper} from "@spt-aki/helpers/ProfileHelper";
 import {IPmcData} from "@spt-aki/models/eft/common/IPmcData";
-import {ProfileController} from "@spt-aki/controllers/ProfileController";
-import {PlayerScavGenerator} from "@spt-aki/generators/PlayerScavGenerator";
 import {ItemHelper} from "@spt-aki/helpers/ItemHelper";
+import {ISaveProgressRequestData} from "@spt-aki/models/eft/inRaid/ISaveProgressRequestData";
+import {InraidCallbacks} from "@spt-aki/callbacks/InraidCallbacks";
+import {PlayerRaidEndState} from "@spt-aki/models/enums/PlayerRaidEndState";
 
 class Mod {
 	private static logger: ILogger;
@@ -14,23 +15,20 @@ class Mod {
 		Mod.logger = container.resolve<ILogger>("WinstonLogger");
 		Mod.itemHelper = container.resolve<ItemHelper>("ItemHelper");
 
-		Mod.logger.info("[MarsyApp-EnableSaveCaseForScav] preAkiLoad");
-
 		container.afterResolution("ProfileHelper", (_t, result: ProfileHelper) => {
 				result.removeSecureContainer = (profile: IPmcData) => {
 					const items = profile.Inventory.items;
 					const secureContainer = items.find((x) => x.slotId === "SecuredContainer");
-					if (secureContainer)
-					{
+					if (secureContainer) {
 						// Find and remove container + children
 						const childItemsInSecureContainer = Mod.itemHelper.findAndReturnChildrenByItems(
 							items,
-							secureContainer._id,
+							secureContainer._id
 						);
 
-
+						secureContainer._tpl = "5732ee6a24597719ae0c0281";
 						// Remove child items + secure container
-						profile.Inventory.items = items.filter((x) => secureContainer._id == x._id || !childItemsInSecureContainer.includes(x._id));
+						profile.Inventory.items = items.filter((x) => secureContainer._id === x._id || !childItemsInSecureContainer.includes(x._id));
 					}
 
 					return profile;
@@ -38,23 +36,34 @@ class Mod {
 			},
 			{frequency: "Always"});
 
-		container.afterResolution("ProfileController", (_t, result: ProfileController) => {
-				const oldgeneratePlayerScav = result.generatePlayerScav.bind(result);
-				result.generatePlayerScav = (sessionID: string) => {
-					Mod.logger.info("[MarsyApp-EnableSaveCaseForScav] generatePlayerScav called");
-					return oldgeneratePlayerScav(sessionID);
-				}
-			},
-			{frequency: "Always"});
+		container.afterResolution("InraidCallbacks", (_t, result: InraidCallbacks) => {
+			const oldSaveProgress = result.saveProgress.bind(result);
+			result.saveProgress = (url: string, info: ISaveProgressRequestData, sessionID: string) => {
 
-		container.afterResolution("PlayerScavGenerator", (_t, result: PlayerScavGenerator) => {
-				const oldgenerate = result.generate.bind(result);
-				result.generate = (sessionID: string) => {
-					Mod.logger.info("[MarsyApp-EnableSaveCaseForScav] generate called");
-					return oldgenerate(sessionID);
+				const statusOnExit = info.exit;
+				const isScav = info.isPlayerScav;
+				const isDead = statusOnExit !== PlayerRaidEndState.SURVIVED && statusOnExit !== PlayerRaidEndState.RUNNER
+				if (isScav && isDead) {
+					const inventory = info.profile.Inventory;
+					const items = inventory.items;
+					const secureContainer = items.find((x) => x.slotId === "SecuredContainer");
+					if (secureContainer) {
+						// Find and remove container + children
+						const childItemsInSecureContainer = Mod.itemHelper.findAndReturnChildrenByItems(
+							items,
+							secureContainer._id
+						);
+
+						// Remove child items + secure container
+						info.profile.Inventory.items = items.filter((x) => !x?.parentId || childItemsInSecureContainer.includes(x._id));
+					}
+
+					info.exit = PlayerRaidEndState.SURVIVED;
 				}
-			},
-			{frequency: "Always"});
+
+				return oldSaveProgress(url, info, sessionID);
+			}
+		}, {frequency: "Always"});
 	}
 }
 
