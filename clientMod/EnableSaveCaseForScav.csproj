@@ -67,6 +67,6 @@
 	</ItemGroup>
 
 	<PropertyGroup>
-		<PostBuildEvent>copy "K:\myMods\develop\MarsyApp-EnableSaveCaseForScav\clientMod\bin\Release\net472\MarsyApp-EnableSaveCaseForScav.dll" "K:\spt-381\BepInEx\scripts\MarsyApp-EnableSaveCaseForScav.dll"</PostBuildEvent>
+		<PostBuildEvent>copy "K:\myMods\develop\MarsyApp-EnableSaveCaseForScav\clientMod\bin\Release\net472\MarsyApp-EnableSaveCaseForScav.dll" "K:\spt-381\BepInEx\plugins\MarsyApp-EnableSaveCaseForScav.dll"</PostBuildEvent>
 	</PropertyGroup>
 </Project>
