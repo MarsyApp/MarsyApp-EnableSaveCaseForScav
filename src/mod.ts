@@ -6,35 +6,41 @@ import {ItemHelper} from "@spt-aki/helpers/ItemHelper";
 import {ISaveProgressRequestData} from "@spt-aki/models/eft/inRaid/ISaveProgressRequestData";
 import {InraidCallbacks} from "@spt-aki/callbacks/InraidCallbacks";
 import {PlayerRaidEndState} from "@spt-aki/models/enums/PlayerRaidEndState";
+import {HashUtil} from "@spt-aki/utils/HashUtil";
+import * as config from "../config/config.json";
 
 class Mod {
 	private static logger: ILogger;
+	private static hashUtil: HashUtil;
 	private static itemHelper: ItemHelper;
+	private static secureContainerTemplate: string;
 
 	preAkiLoad(container: DependencyContainer): void {
 		Mod.logger = container.resolve<ILogger>("WinstonLogger");
 		Mod.itemHelper = container.resolve<ItemHelper>("ItemHelper");
+		Mod.hashUtil = container.resolve<HashUtil>("HashUtil");
+		Mod.secureContainerTemplate = config.secureContainerTemplate;
 
 		container.afterResolution("ProfileHelper", (_t, result: ProfileHelper) => {
-				result.removeSecureContainer = (profile: IPmcData) => {
-					const items = profile.Inventory.items;
-					const secureContainer = items.find((x) => x.slotId === "SecuredContainer");
-					if (secureContainer) {
-						// Find and remove container + children
-						const childItemsInSecureContainer = Mod.itemHelper.findAndReturnChildrenByItems(
-							items,
-							secureContainer._id
-						);
+			const oldRemoveSecureContainer = result.removeSecureContainer.bind(result);
+			result.removeSecureContainer = (profile: IPmcData) => {
+				const profileResult = oldRemoveSecureContainer(profile);
+				const items = profileResult.Inventory.items;
+				const defaultInventory = items.find((x) => x._tpl === "55d7217a4bdc2d86028b456d");
+				const secureContainer = items.find((x) => x.slotId === "SecuredContainer");
 
-						secureContainer._tpl = "5732ee6a24597719ae0c0281";
-						// Remove child items + secure container
-						profile.Inventory.items = items.filter((x) => secureContainer._id === x._id || !childItemsInSecureContainer.includes(x._id));
-					}
-
-					return profile;
+				if (!secureContainer && defaultInventory) {
+					profileResult.Inventory.items.push({
+						"_id": Mod.hashUtil.generate(),
+						"_tpl": Mod.secureContainerTemplate,
+						"parentId": defaultInventory._id,
+						"slotId": "SecuredContainer"
+					});
 				}
-			},
-			{frequency: "Always"});
+
+				return profileResult;
+			}
+		}, {frequency: "Always"});
 
 		container.afterResolution("InraidCallbacks", (_t, result: InraidCallbacks) => {
 			const oldSaveProgress = result.saveProgress.bind(result);
@@ -48,13 +54,11 @@ class Mod {
 					const items = inventory.items;
 					const secureContainer = items.find((x) => x.slotId === "SecuredContainer");
 					if (secureContainer) {
-						// Find and remove container + children
 						const childItemsInSecureContainer = Mod.itemHelper.findAndReturnChildrenByItems(
 							items,
 							secureContainer._id
 						);
 
-						// Remove child items + secure container
 						info.profile.Inventory.items = items.filter((x) => !x?.parentId || childItemsInSecureContainer.includes(x._id));
 					}
 

@@ -5,7 +5,7 @@ const glob = require("glob");
 const zip = require('bestzip');
 const path = require("path");
 
-const pathToMods = "K:\\spt-381\\user\\mods"
+const pathToMods = "D:\\spt-381\\user\\mods"
 
 const { author, name:packageName, version } = require("./package.json");
 
