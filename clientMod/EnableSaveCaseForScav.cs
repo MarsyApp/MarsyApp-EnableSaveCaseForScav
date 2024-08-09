@@ -2,7 +2,7 @@ using BepInEx;
 
 namespace EnableSaveCaseForScav
 {
-    [BepInPlugin("com.MarsyApp.EnableSaveCaseForScav", "MarsyApp-EnableSaveCaseForScav", "1.1.0")]
+    [BepInPlugin("com.MarsyApp.EnableSaveCaseForScav", "MarsyApp-EnableSaveCaseForScav", "1.2.0")]
     public class EnableSaveCaseForScav : BaseUnityPlugin
     {
         private void Awake()

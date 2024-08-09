@@ -1,25 +1,26 @@
 import {DependencyContainer} from "tsyringe";
-import {ILogger} from "@spt-aki/models/spt/utils/ILogger";
-import {ProfileHelper} from "@spt-aki/helpers/ProfileHelper";
-import {IPmcData} from "@spt-aki/models/eft/common/IPmcData";
-import {ItemHelper} from "@spt-aki/helpers/ItemHelper";
-import {ISaveProgressRequestData} from "@spt-aki/models/eft/inRaid/ISaveProgressRequestData";
-import {InraidCallbacks} from "@spt-aki/callbacks/InraidCallbacks";
-import {PlayerRaidEndState} from "@spt-aki/models/enums/PlayerRaidEndState";
-import {HashUtil} from "@spt-aki/utils/HashUtil";
+import {ILogger} from "@spt/models/spt/utils/ILogger";
+import {ProfileHelper} from "@spt/helpers/ProfileHelper";
+import {IPmcData} from "@spt/models/eft/common/IPmcData";
+import {ItemHelper} from "@spt/helpers/ItemHelper";
+import {ISaveProgressRequestData} from "@spt/models/eft/inRaid/ISaveProgressRequestData";
+import {InraidCallbacks} from "@spt/callbacks/InraidCallbacks";
+import {PlayerRaidEndState} from "@spt/models/enums/PlayerRaidEndState";
+import {HashUtil} from "@spt/utils/HashUtil";
 import * as config from "../config/config.json";
 
-class Mod {
-	private static logger: ILogger;
-	private static hashUtil: HashUtil;
-	private static itemHelper: ItemHelper;
-	private static secureContainerTemplate: string;
+//const modConfig = require("../config/config.json");
 
-	preAkiLoad(container: DependencyContainer): void {
-		Mod.logger = container.resolve<ILogger>("WinstonLogger");
-		Mod.itemHelper = container.resolve<ItemHelper>("ItemHelper");
-		Mod.hashUtil = container.resolve<HashUtil>("HashUtil");
-		Mod.secureContainerTemplate = config.secureContainerTemplate;
+export class Main implements IPreSptLoadMod, IPostDBLoadMod, IPostSptLoadMod {
+
+    private modLoader: PreSptModLoader;
+
+	preSptLoad(container: DependencyContainer): void {
+		const logger = container.resolve<ILogger>("WinstonLogger");
+		const itemHelper = container.resolve<ItemHelper>("ItemHelper");
+		const hashUtil = container.resolve<HashUtil>("HashUtil");
+		const secureContainerTemplate = config.secureContainerTemplate;
+		//const secureContainerTemplate = modconfig.secureContainerTemplate;
 
 		container.afterResolution("ProfileHelper", (_t, result: ProfileHelper) => {
 			const oldRemoveSecureContainer = result.removeSecureContainer.bind(result);
@@ -31,8 +32,8 @@ class Mod {
 
 				if (!secureContainer && defaultInventory) {
 					profileResult.Inventory.items.push({
-						"_id": Mod.hashUtil.generate(),
-						"_tpl": Mod.secureContainerTemplate,
+						"_id": hashUtil.generate(),
+						"_tpl": secureContainerTemplate,
 						"parentId": defaultInventory._id,
 						"slotId": "SecuredContainer"
 					});
@@ -54,7 +55,7 @@ class Mod {
 					const items = inventory.items;
 					const secureContainer = items.find((x) => x.slotId === "SecuredContainer");
 					if (secureContainer) {
-						const childItemsInSecureContainer = Mod.itemHelper.findAndReturnChildrenByItems(
+						const childItemsInSecureContainer = itemHelper.findAndReturnChildrenByItems(
 							items,
 							secureContainer._id
 						);
@@ -71,4 +72,4 @@ class Mod {
 	}
 }
 
-module.exports = {mod: new Mod()}
+module.exports = { mod: new Main() }

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Aki.Reflection.Patching;
+using SPT.Reflection.Patching;
 using EFT;
 using EFT.InventoryLogic;
 using EFT.UI;
@@ -101,7 +101,7 @@ namespace EnableSaveCaseForScav
             protected static Type NestedType;
             protected override MethodBase GetTargetMethod()
             {
-                NestedType = AccessTools.Inner(typeof(ScavengerInventoryScreen), nameof(ScavengerInventoryScreen.GClass3131));
+                NestedType = AccessTools.Inner(typeof(ScavengerInventoryScreen), nameof(ScavengerInventoryScreen.GClass3156));
                 return AccessTools.PropertyGetter(NestedType, "HasItems");
             }
 
@@ -112,7 +112,7 @@ namespace EnableSaveCaseForScav
                 try
                 {
                     FieldInfo scavControllerFiledInfo = AccessTools.Field(NestedType, "ScavController");
-                    GClass2764 scavController = (GClass2764)scavControllerFiledInfo.GetValue(__instance);
+                    GClass2780 scavController = (GClass2780)scavControllerFiledInfo.GetValue(__instance);
                     IEnumerable<Item> items = scavController.Inventory.AllRealPlayerItems;
                     
                     IEnumerable<Item> filteredItems = items.Where(x => !(x.Template.Parent is SecureContainerTemplateClass));
@@ -186,7 +186,8 @@ namespace EnableSaveCaseForScav
                         bool isSecureContainer = itemContext.Item.Template.Parent is SecureContainerTemplateClass;
                         if (IsScav(profile) && isSecureContainer)
                         {
-                            __result = new GClass3346("Can't find appropriate container");
+                            StackSlot stackSlot = new StackSlot(); // Create a new StackSlot object
+                            __result = new GClass3346(itemContext.Item, stackSlot);
                             return false;
                         }
                     }
